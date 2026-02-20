@@ -1,0 +1,10 @@
+cat > .gitignore << 'EOF'
+.DS_Store
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+*.hmap
+*.ipa
+*.dSYM
+EOF

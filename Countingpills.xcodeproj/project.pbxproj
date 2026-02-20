@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EAB519622F19225C00A27C0A /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = EAB519612F19225C00A27C0A /* onnxruntime */; };
+		EAB519642F19225C00A27C0A /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = EAB519632F19225C00A27C0A /* onnxruntime_extensions */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		EAB519442F191CC700A27C0A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EAB519642F19225C00A27C0A /* onnxruntime_extensions in Frameworks */,
+				EAB519622F19225C00A27C0A /* onnxruntime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = Countingpills;
 			packageProductDependencies = (
+				EAB519612F19225C00A27C0A /* onnxruntime */,
+				EAB519632F19225C00A27C0A /* onnxruntime_extensions */,
 			);
 			productName = Countingpills;
 			productReference = EAB519362F191CC600A27C0A /* Countingpills.app */;
@@ -195,6 +204,9 @@
 			);
 			mainGroup = EAB5192D2F191CC600A27C0A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EAB519602F19225C00A27C0A /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EAB519372F191CC600A27C0A /* Products */;
 			projectDirPath = "";
@@ -400,6 +412,7 @@
 				DEVELOPMENT_TEAM = R54DJK7U34;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "카메라 사용을 위해 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -432,6 +445,7 @@
 				DEVELOPMENT_TEAM = R54DJK7U34;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "카메라 사용을 위해 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -578,6 +592,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EAB519602F19225C00A27C0A /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.20.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EAB519612F19225C00A27C0A /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EAB519602F19225C00A27C0A /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+		EAB519632F19225C00A27C0A /* onnxruntime_extensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EAB519602F19225C00A27C0A /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime_extensions;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EAB5192E2F191CC600A27C0A /* Project object */;
 }
