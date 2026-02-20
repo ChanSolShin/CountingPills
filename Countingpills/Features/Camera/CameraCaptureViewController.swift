@@ -1,5 +1,4 @@
 import AVFoundation
-import CoreImage
 import UIKit
 
 final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -17,35 +16,33 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     private let videoOutputQueue = DispatchQueue(label: "camera.video.output.queue", qos: .userInitiated)
     private let latestBufferQueue = DispatchQueue(label: "camera.latest.buffer.queue")
 
-    private let ciContext = CIContext()
-    private let postProcessor = PillDetectionPostProcessor()
-    private let framePreprocessor = PillFramePreprocessor(modelSide: 640)
+    private let framePreparationUseCase: CaptureFramePreparationUseCase
+    private let runPillDetectionUseCase: RunPillDetectionUseCase
 
     private let previewContainerView = UIView()
     private let frameBorderLayer = CAShapeLayer()
     private let dotLayer = CAShapeLayer()
     private let frozenImageView = UIImageView()
 
-    private var isProcessing = false
+    private var captureState = CameraCaptureStateMachine()
     private var isSessionConfigured = false
-    private let modelRenderSize = CGSize(width: 640, height: 640)
-
     private var latestPixelBuffer: CVPixelBuffer?
 
-    private lazy var runner: PillsOnnxRunner? = {
-        do {
-            let r = try PillsOnnxRunner()
-            #if DEBUG
-            print("[PillDebug] runner-init-ok")
-            #endif
-            return r
-        } catch {
-            #if DEBUG
-            print("[PillDebug] runner-init-failed: \(error.localizedDescription)")
-            #endif
-            return nil
-        }
-    }()
+    init(
+        framePreparationUseCase: CaptureFramePreparationUseCase = DefaultCaptureFramePreparationUseCase(
+            modelSide: 640,
+            variantCount: 8
+        ),
+        runPillDetectionUseCase: RunPillDetectionUseCase = DefaultRunPillDetectionUseCase()
+    ) {
+        self.framePreparationUseCase = framePreparationUseCase
+        self.runPillDetectionUseCase = runPillDetectionUseCase
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -71,8 +68,8 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     func captureCurrentFrame() {
         stateQueue.async {
-            guard !self.isProcessing else { return }
-            self.isProcessing = true
+            guard self.captureState.beginCapture() else { return }
+
             guard
                 let sourcePixelBuffer = self.latestBufferQueue.sync(execute: { self.latestPixelBuffer }),
                 let ownedPixelBuffer = self.copyPixelBuffer(sourcePixelBuffer)
@@ -80,7 +77,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
                 #if DEBUG
                 print("[PillDebug] capture-failed: latestPixelBuffer unavailable")
                 #endif
-                self.finishProcessing(resetCaptureState: false)
+                self.finishProcessing(keepCapturedFrame: false)
                 return
             }
 
@@ -97,15 +94,14 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     func resumeCameraForRetake() {
         stateQueue.async {
-            self.isProcessing = false
-        }
-
-        DispatchQueue.main.async {
-            self.frozenImageView.image = nil
-            self.frozenImageView.isHidden = true
-            self.dotLayer.path = nil
-            self.onCaptureStateChange?(false)
-            self.onProcessingChange?(false)
+            self.captureState.resetForRetake()
+            DispatchQueue.main.async {
+                self.frozenImageView.image = nil
+                self.frozenImageView.isHidden = true
+                self.dotLayer.path = nil
+                self.onCaptureStateChange?(false)
+                self.onProcessingChange?(false)
+            }
         }
     }
 
@@ -226,9 +222,13 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     }
 
     private func processCapturedFrame(_ ownedPixelBuffer: CVPixelBuffer) {
-        guard let prepared = autoreleasepool(invoking: { self.prepareCapturedFrame(from: ownedPixelBuffer) }) else {
-            finishProcessing(resetCaptureState: false)
+        guard let prepared = autoreleasepool(invoking: { self.framePreparationUseCase.prepare(from: ownedPixelBuffer) }) else {
+            finishProcessing(keepCapturedFrame: false)
             return
+        }
+
+        stateQueue.async {
+            self.captureState.markCapturedFrameShown()
         }
 
         DispatchQueue.main.async {
@@ -239,181 +239,36 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
         autoreleasepool {
             defer {
-                self.finishProcessing(resetCaptureState: true)
+                self.finishProcessing(keepCapturedFrame: true)
             }
 
-            guard let runner = self.runner else {
-                #if DEBUG
-                print("[PillDebug] runner-nil")
-                #endif
-                DispatchQueue.main.async {
-                    self.dotLayer.path = nil
-                    self.onResult?(PillInferenceResult(count: 0, points: []))
-                }
-                return
-            }
+            let inferenceResult = self.runPillDetectionUseCase.run(modelPixelBuffers: prepared.modelPixelBuffers)
+            let mappedPoints = prepared.mapPointsToDisplay(inferenceResult.points)
+            let result = PillInferenceResult(count: inferenceResult.count, points: mappedPoints)
 
-            do {
-                let output = try runner.run(pixelBuffers: prepared.modelPixelBuffers, scalingMode: .zeroToOne)
-                #if DEBUG
-                print("[PillDebug] runner-output(scale=0..1) shape=\(output.shape) values=\(output.values.count)")
-                #endif
-                var result = self.postProcessor.process(output, expectedVariants: prepared.modelPixelBuffers.count)
-
-                if result.count == 0 {
-                    let fallbackOutput = try runner.run(pixelBuffers: prepared.modelPixelBuffers, scalingMode: .zeroTo255)
-                    #if DEBUG
-                    print("[PillDebug] runner-output(scale=0..255) shape=\(fallbackOutput.shape) values=\(fallbackOutput.values.count)")
-                    #endif
-                    let fallbackResult = self.postProcessor.process(
-                        fallbackOutput,
-                        expectedVariants: prepared.modelPixelBuffers.count
-                    )
-                    if fallbackResult.count > 0 {
-                        result = fallbackResult
-                        #if DEBUG
-                        print("[PillDebug] selected-scale=0..255 count=\(fallbackResult.count)")
-                        #endif
-                    }
-                }
-
-                let mappedPoints = self.mapPointsToDisplay(
-                    result.points,
-                    roiRect: prepared.inferenceROI,
-                    edgeTrimRatio: prepared.edgeTrimRatio
-                )
-                result = PillInferenceResult(count: result.count, points: mappedPoints)
-
-                DispatchQueue.main.async {
-                    self.drawDots(result.points)
-                    self.onResult?(result)
-                }
-            } catch {
-                #if DEBUG
-                print("[PillDebug] runner-run-failed: \(error.localizedDescription)")
-                #endif
-                DispatchQueue.main.async {
-                    self.dotLayer.path = nil
-                    self.onResult?(PillInferenceResult(count: 0, points: []))
-                }
+            DispatchQueue.main.async {
+                self.drawDots(result.points)
+                self.onResult?(result)
             }
         }
     }
 
-    private func finishProcessing(resetCaptureState: Bool) {
+    private func finishProcessing(keepCapturedFrame: Bool) {
         stateQueue.async {
-            self.isProcessing = false
+            self.captureState.finishProcessing(keepCapturedFrame: keepCapturedFrame)
+            let isProcessing = self.captureState.isProcessing
+            let isShowingCapturedFrame = self.captureState.isShowingCapturedFrame
+
             DispatchQueue.main.async {
-                self.onProcessingChange?(false)
-                if resetCaptureState == false {
+                self.onProcessingChange?(isProcessing)
+                self.onCaptureStateChange?(isShowingCapturedFrame)
+
+                if !isShowingCapturedFrame {
                     self.frozenImageView.image = nil
                     self.frozenImageView.isHidden = true
-                    self.onCaptureStateChange?(false)
+                    self.dotLayer.path = nil
                 }
             }
-        }
-    }
-
-    private func prepareCapturedFrame(from pixelBuffer: CVPixelBuffer) -> PreparedSquareFrame? {
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let extent = ciImage.extent.integral
-        let side = min(extent.width, extent.height)
-        let cropRect = CGRect(
-            x: extent.midX - side * 0.5,
-            y: extent.midY - side * 0.5,
-            width: side,
-            height: side
-        ).intersection(extent).integral
-
-        guard !cropRect.isNull, cropRect.width > 0, cropRect.height > 0 else {
-            return nil
-        }
-
-        let cropped = ciImage.cropped(to: cropRect)
-        let translated = cropped.transformed(
-            by: CGAffineTransform(
-                translationX: -cropped.extent.origin.x,
-                y: -cropped.extent.origin.y
-            )
-        )
-
-        let sourceExtent = translated.extent.integral
-        guard sourceExtent.width > 0, sourceExtent.height > 0 else { return nil }
-
-        let modelScaleX = modelRenderSize.width / sourceExtent.width
-        let modelScaleY = modelRenderSize.height / sourceExtent.height
-        let resizedSquare = translated.transformed(by: CGAffineTransform(scaleX: modelScaleX, y: modelScaleY))
-        let preprocessed = framePreprocessor.prepareForInference(from: resizedSquare, ciContext: ciContext)
-
-        var modelPixelBuffers: [CVPixelBuffer] = []
-        modelPixelBuffers.reserveCapacity(preprocessed.variantImages.count)
-        for variantImage in preprocessed.variantImages {
-            guard let buffer = makePixelBuffer(
-                width: Int(modelRenderSize.width),
-                height: Int(modelRenderSize.height)
-            ) else {
-                return nil
-            }
-            ciContext.render(variantImage, to: buffer)
-            modelPixelBuffers.append(buffer)
-        }
-        guard !modelPixelBuffers.isEmpty else { return nil }
-
-        #if DEBUG
-        let confidenceText: String
-        if let confidence = preprocessed.roiConfidence {
-            confidenceText = String(format: "%.2f", confidence)
-        } else {
-            confidenceText = "-"
-        }
-        if let roi = preprocessed.roiRect {
-            print(
-                "[PillDebug] preprocess-roi[\(preprocessed.roiSource)] x=\(Int(roi.origin.x)) y=\(Int(roi.origin.y)) " +
-                "w=\(Int(roi.width)) h=\(Int(roi.height)) conf=\(confidenceText) variants=\(modelPixelBuffers.count)"
-            )
-        } else {
-            print("[PillDebug] preprocess-roi[\(preprocessed.roiSource)] none conf=\(confidenceText) variants=\(modelPixelBuffers.count)")
-        }
-        #endif
-
-        let displayRect = CGRect(origin: .zero, size: modelRenderSize)
-        guard let displayCGImage = ciContext.createCGImage(resizedSquare, from: displayRect) else {
-            return nil
-        }
-
-        return PreparedSquareFrame(
-            displayImage: UIImage(cgImage: displayCGImage),
-            modelPixelBuffers: modelPixelBuffers,
-            inferenceROI: preprocessed.roiRect ?? displayRect,
-            edgeTrimRatio: preprocessed.edgeTrimRatio
-        )
-    }
-
-    private func mapPointsToDisplay(
-        _ points: [CGPoint],
-        roiRect: CGRect,
-        edgeTrimRatio: CGFloat
-    ) -> [CGPoint] {
-        let modelSide = modelRenderSize.width
-        guard modelSide > 0 else { return points }
-
-        let trim = max(0, min(modelSide * 0.2, modelSide * edgeTrimRatio))
-        let trimmedSide = max(1, modelSide - trim * 2)
-        let trimScale = trimmedSide / modelSide
-
-        return points.map { point in
-            let xModel = CGFloat(point.x) * modelSide
-            let yModel = CGFloat(point.y) * modelSide
-
-            let xRoi = xModel * trimScale + trim
-            let yRoi = yModel * trimScale + trim
-
-            let xDisplay = roiRect.minX + (xRoi / modelSide) * roiRect.width
-            let yDisplay = roiRect.minY + (yRoi / modelSide) * roiRect.height
-
-            let nx = max(0, min(1, xDisplay / modelSide))
-            let ny = max(0, min(1, yDisplay / modelSide))
-            return CGPoint(x: nx, y: ny)
         }
     }
 
@@ -503,26 +358,6 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         return destination
     }
 
-    private func makePixelBuffer(width: Int, height: Int) -> CVPixelBuffer? {
-        var pixelBuffer: CVPixelBuffer?
-        let attrs: [CFString: Any] = [
-            kCVPixelBufferCGImageCompatibilityKey: true,
-            kCVPixelBufferCGBitmapContextCompatibilityKey: true
-        ]
-
-        let status = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            width,
-            height,
-            kCVPixelFormatType_32BGRA,
-            attrs as CFDictionary,
-            &pixelBuffer
-        )
-
-        guard status == kCVReturnSuccess else { return nil }
-        return pixelBuffer
-    }
-
     private func modelFrameRect(in bounds: CGRect) -> CGRect {
         let availableWidth = bounds.width - 32
         let availableHeight = bounds.height - 280
@@ -532,11 +367,4 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         let y = max(120, (bounds.height - side) * 0.5)
         return CGRect(x: x, y: y, width: side, height: side)
     }
-}
-
-private struct PreparedSquareFrame {
-    let displayImage: UIImage
-    let modelPixelBuffers: [CVPixelBuffer]
-    let inferenceROI: CGRect
-    let edgeTrimRatio: CGFloat
 }
