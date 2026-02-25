@@ -10,6 +10,7 @@
 		0A093C7D738A2E5BDEB758D2 /* Pods_Countingpills.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CAAC6ADA8A7468BB98A61EE4 /* Pods_Countingpills.framework */; };
 		BB1CF7BF90E6C87ACA32D8FC /* Pods_Countingpills_CountingpillsUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C4B839B939747939F32C42B /* Pods_Countingpills_CountingpillsUITests.framework */; };
 		C4441BC6570D8BFB807FD0F4 /* Pods_CountingpillsTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAF3C17295DB435007927285 /* Pods_CountingpillsTests.framework */; };
+		EAEE302B2F4F58AE00BE92D7 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +43,7 @@
 		EAB519362F191CC600A27C0A /* Countingpills.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Countingpills.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAB519432F191CC700A27C0A /* CountingpillsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountingpillsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAB5194D2F191CC700A27C0A /* CountingpillsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountingpillsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -129,6 +131,7 @@
 		EAB5192D2F191CC600A27C0A = {
 			isa = PBXGroup;
 			children = (
+				EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */,
 				EAB519382F191CC600A27C0A /* Countingpills */,
 				EAB519462F191CC700A27C0A /* CountingpillsTests */,
 				EAB519502F191CC700A27C0A /* CountingpillsUITests */,
@@ -267,6 +270,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EAEE302B2F4F58AE00BE92D7 /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
