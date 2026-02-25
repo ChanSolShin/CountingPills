@@ -1,0 +1,2 @@
+#include "Pods/Target Support Files/Pods-Countingpills/Pods-Countingpills.debug.xcconfig"
+#include? "../Secrets.xcconfig"
