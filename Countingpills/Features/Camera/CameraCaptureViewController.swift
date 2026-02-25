@@ -199,12 +199,12 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
             self.session.addOutput(self.videoOutput)
 
             if let connection = self.videoOutput.connection(with: .video) {
-                if connection.isVideoOrientationSupported {
-                    connection.videoOrientation = .portrait
-                }
-                if connection.isVideoStabilizationSupported {
-                    connection.preferredVideoStabilizationMode = .off
-                }
+            if connection.isVideoOrientationSupported {
+                connection.videoOrientation = .portrait
+            }
+            if connection.isVideoStabilizationSupported {
+                connection.preferredVideoStabilizationMode = .off
+            }
             }
             shouldStartSession = true
         }
@@ -359,12 +359,17 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     }
 
     private func modelFrameRect(in bounds: CGRect) -> CGRect {
-        let availableWidth = bounds.width - 32
-        let availableHeight = bounds.height - 280
-        let side = max(220, min(availableWidth, availableHeight))
+        let horizontalPadding: CGFloat = 16
+        let topInset: CGFloat = 120
+        let bottomReservedHeight: CGFloat = 280
+        let targetSide: CGFloat = 352
+
+        let availableWidth = max(1, bounds.width - (horizontalPadding * 2))
+        let availableHeight = max(1, bounds.height - topInset - bottomReservedHeight)
+        let side = min(targetSide, availableWidth, availableHeight)
 
         let x = (bounds.width - side) * 0.5
-        let y = max(120, (bounds.height - side) * 0.5)
+        let y = topInset + max(0, (availableHeight - side) * 0.5)
         return CGRect(x: x, y: y, width: side, height: side)
     }
 }

@@ -52,7 +52,12 @@ final class DefaultCaptureFramePreparationUseCase: CaptureFramePreparationUseCas
         self.modelSide = modelSide
         self.modelRenderSize = CGSize(width: modelSide, height: modelSide)
         self.ciContext = ciContext
-        self.framePreprocessor = PillFramePreprocessor(modelSide: modelSide, variantCount: variantCount)
+        self.framePreprocessor = PillFramePreprocessor(
+            modelSide: modelSide,
+            variantCount: variantCount,
+            edgeTrimRatio: 0,
+            roiMode: .fixed640
+        )
     }
 
     func prepare(from pixelBuffer: CVPixelBuffer) -> PreparedCapturedFrame? {

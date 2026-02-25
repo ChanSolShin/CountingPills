@@ -13,6 +13,11 @@ struct PillPreprocessedFrame {
 }
 
 final class PillFramePreprocessor {
+    enum ROIMode {
+        case fixed640
+        case detectedTray
+    }
+
     private struct DetectedROI {
         let rect: CGRect
         let confidence: CGFloat
@@ -26,20 +31,36 @@ final class PillFramePreprocessor {
 
     private let modelSide: CGFloat
     private let variantCount: Int
-    private let edgeTrimRatio: CGFloat = 0.040
+    private let edgeTrimRatio: CGFloat
+    private let roiMode: ROIMode
 
-    init(modelSide: CGFloat = 640, variantCount: Int = 8) {
+    init(
+        modelSide: CGFloat = 640,
+        variantCount: Int = 8,
+        edgeTrimRatio: CGFloat = 0.0,
+        roiMode: ROIMode = .fixed640
+    ) {
         self.modelSide = modelSide
         self.variantCount = max(1, variantCount)
+        self.edgeTrimRatio = max(0, min(0.2, edgeTrimRatio))
+        self.roiMode = roiMode
     }
 
     func prepareForInference(from squareImage: CIImage, ciContext: CIContext) -> PillPreprocessedFrame {
         let normalized = normalizeToModelExtent(squareImage)
-        let fallbackROI = defaultROI(in: normalized.extent)
-        let detectedROI = detectTrayROI(in: normalized, ciContext: ciContext)
-        let finalROI = makeFinalROI(detected: detectedROI, fallback: fallbackROI, bounds: normalized.extent)
+
+        let finalROI: FinalROI
+        switch roiMode {
+        case .fixed640:
+            finalROI = FinalROI(rect: modelRect, source: "fixed", confidence: 1.0)
+        case .detectedTray:
+            let fallbackROI = defaultROI(in: normalized.extent)
+            let detectedROI = detectTrayROI(in: normalized, ciContext: ciContext)
+            finalROI = makeFinalROI(detected: detectedROI, fallback: fallbackROI, bounds: normalized.extent)
+        }
+
         let cropped = cropAndResize(normalized, to: finalROI.rect)
-        let trimmed = trimEdgeBand(cropped)
+        let trimmed = edgeTrimRatio > 0 ? trimEdgeBand(cropped) : cropped
         let enhanced = enhanceBaseImage(trimmed)
         let variants = makeVariants(from: enhanced)
 
