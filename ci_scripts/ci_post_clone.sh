@@ -1,0 +1,16 @@
+#!/bin/sh
+set -euo pipefail
+
+cd "$CI_WORKSPACE"
+
+: "${ROBOFLOW_API_KEY:?ROBOFLOW_API_KEY is required}"
+: "${ROBOFLOW_PILL_MODEL_ID:=pill_count-instance-segment}"
+: "${ROBOFLOW_PILL_MODEL_VERSION:=8}"
+
+cat > Secrets.xcconfig <<EOT
+ROBOFLOW_API_KEY = $ROBOFLOW_API_KEY
+ROBOFLOW_PILL_MODEL_ID = $ROBOFLOW_PILL_MODEL_ID
+ROBOFLOW_PILL_MODEL_VERSION = $ROBOFLOW_PILL_MODEL_VERSION
+EOT
+
+pod install
