@@ -34,8 +34,9 @@
 		0C54D5839B8D4315BDABF6CF /* Pods-Countingpills-CountingpillsUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills-CountingpillsUITests.debug.xcconfig"; path = "Target Support Files/Pods-Countingpills-CountingpillsUITests/Pods-Countingpills-CountingpillsUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		1C4B839B939747939F32C42B /* Pods_Countingpills_CountingpillsUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Countingpills_CountingpillsUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3051EDA2B0AEF8C4834AC559 /* Pods-Countingpills-CountingpillsUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills-CountingpillsUITests.release.xcconfig"; path = "Target Support Files/Pods-Countingpills-CountingpillsUITests/Pods-Countingpills-CountingpillsUITests.release.xcconfig"; sourceTree = "<group>"; };
-		48C5A1C1BCBE8890541846AD /* Pods-Countingpills.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills.debug.xcconfig"; path = "Target Support Files/Pods-Countingpills/Pods-Countingpills.debug.xcconfig"; sourceTree = "<group>"; };
-		765CC4471C1B8CCC5773D3A5 /* Pods-Countingpills.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills.release.xcconfig"; path = "Target Support Files/Pods-Countingpills/Pods-Countingpills.release.xcconfig"; sourceTree = "<group>"; };
+			48C5A1C1BCBE8890541846AD /* Pods-Countingpills.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills.debug.xcconfig"; path = "Target Support Files/Pods-Countingpills/Pods-Countingpills.debug.xcconfig"; sourceTree = "<group>"; };
+			6A8E1896C14B4571A2B37B0A /* App.Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/App.Debug.xcconfig; sourceTree = "<group>"; };
+			765CC4471C1B8CCC5773D3A5 /* Pods-Countingpills.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Countingpills.release.xcconfig"; path = "Target Support Files/Pods-Countingpills/Pods-Countingpills.release.xcconfig"; sourceTree = "<group>"; };
 		82C84F2368011B55AC04D99C /* Pods-CountingpillsTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CountingpillsTests.release.xcconfig"; path = "Target Support Files/Pods-CountingpillsTests/Pods-CountingpillsTests.release.xcconfig"; sourceTree = "<group>"; };
 		CAAC6ADA8A7468BB98A61EE4 /* Pods_Countingpills.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Countingpills.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD17744FD6906C4115893546 /* Pods-CountingpillsTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CountingpillsTests.debug.xcconfig"; path = "Target Support Files/Pods-CountingpillsTests/Pods-CountingpillsTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -43,7 +44,8 @@
 		EAB519362F191CC600A27C0A /* Countingpills.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Countingpills.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAB519432F191CC700A27C0A /* CountingpillsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountingpillsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAB5194D2F191CC700A27C0A /* CountingpillsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountingpillsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+			EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+			F70598E8112A4F8AB72F8D63 /* App.Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/App.Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -130,9 +132,11 @@
 		};
 		EAB5192D2F191CC600A27C0A = {
 			isa = PBXGroup;
-			children = (
-				EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */,
-				EAB519382F191CC600A27C0A /* Countingpills */,
+				children = (
+					6A8E1896C14B4571A2B37B0A /* App.Debug.xcconfig */,
+					F70598E8112A4F8AB72F8D63 /* App.Release.xcconfig */,
+					EAEE302A2F4F58AC00BE92D7 /* Secrets.xcconfig */,
+					EAB519382F191CC600A27C0A /* Countingpills */,
 				EAB519462F191CC700A27C0A /* CountingpillsTests */,
 				EAB519502F191CC700A27C0A /* CountingpillsUITests */,
 				EAB519372F191CC600A27C0A /* Products */,
@@ -563,7 +567,7 @@
 		};
 		EAB519582F191CC700A27C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 48C5A1C1BCBE8890541846AD /* Pods-Countingpills.debug.xcconfig */;
+				baseConfigurationReference = 6A8E1896C14B4571A2B37B0A /* App.Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -573,9 +577,12 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Countingpills/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+					INFOPLIST_KEY_CFBundleDisplayName = "";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
+					INFOPLIST_KEY_ROBOFLOW_API_KEY = "$(ROBOFLOW_API_KEY)";
+					INFOPLIST_KEY_ROBOFLOW_PILL_MODEL_ID = "$(ROBOFLOW_PILL_MODEL_ID)";
+					INFOPLIST_KEY_ROBOFLOW_PILL_MODEL_VERSION = "$(ROBOFLOW_PILL_MODEL_VERSION)";
+					INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -600,7 +607,7 @@
 		};
 		EAB519592F191CC700A27C0A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 765CC4471C1B8CCC5773D3A5 /* Pods-Countingpills.release.xcconfig */;
+				baseConfigurationReference = F70598E8112A4F8AB72F8D63 /* App.Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -610,9 +617,12 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Countingpills/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+					INFOPLIST_KEY_CFBundleDisplayName = "";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
+					INFOPLIST_KEY_ROBOFLOW_API_KEY = "$(ROBOFLOW_API_KEY)";
+					INFOPLIST_KEY_ROBOFLOW_PILL_MODEL_ID = "$(ROBOFLOW_PILL_MODEL_ID)";
+					INFOPLIST_KEY_ROBOFLOW_PILL_MODEL_VERSION = "$(ROBOFLOW_PILL_MODEL_VERSION)";
+					INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
