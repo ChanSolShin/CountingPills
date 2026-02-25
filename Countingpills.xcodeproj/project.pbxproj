@@ -250,6 +250,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = EAB5192D2F191CC600A27C0A;
 			minimizedProjectReferenceProxies = 1;
@@ -573,7 +574,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Countingpills/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_NSCameraUsageDescription = "카메라 사용을 위해 필요합니다";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -610,7 +611,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Countingpills/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_NSCameraUsageDescription = "카메라 사용을 위해 필요합니다";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to count pills.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
