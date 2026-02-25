@@ -7,7 +7,25 @@
 		<key>Countingpills.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>4</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>EAB519352F191CC600A27C0A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>EAB519422F191CC700A27C0A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>EAB5194C2F191CC700A27C0A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>

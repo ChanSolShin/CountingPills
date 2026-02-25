@@ -8,3 +8,7 @@ build/
 *.ipa
 *.dSYM
 EOF
+.venv/
+.env
+.env*
+Pods/

@@ -2,6 +2,8 @@ import AVFoundation
 import UIKit
 
 final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+    private static let pipelineProfile: PillPipelineProfile = .pillInstanceOnly
+
     var onResult: ((PillInferenceResult) -> Void)?
     var onProcessingChange: ((Bool) -> Void)?
     var onCaptureStateChange: ((Bool) -> Void)?
@@ -26,14 +28,19 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     private var captureState = CameraCaptureStateMachine()
     private var isSessionConfigured = false
+    private var isConfiguringSession = false
+    private var pendingSessionStart = false
     private var latestPixelBuffer: CVPixelBuffer?
 
     init(
         framePreparationUseCase: CaptureFramePreparationUseCase = DefaultCaptureFramePreparationUseCase(
             modelSide: 640,
-            variantCount: 8
+            variantCount: 1,
+            profile: CameraCaptureViewController.pipelineProfile
         ),
-        runPillDetectionUseCase: RunPillDetectionUseCase = DefaultRunPillDetectionUseCase()
+        runPillDetectionUseCase: RunPillDetectionUseCase = DefaultRunPillDetectionUseCase(
+            profile: CameraCaptureViewController.pipelineProfile
+        )
     ) {
         self.framePreparationUseCase = framePreparationUseCase
         self.runPillDetectionUseCase = runPillDetectionUseCase
@@ -107,6 +114,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     func stopSession() {
         sessionQueue.async {
+            self.pendingSessionStart = false
             if self.session.isRunning {
                 self.session.stopRunning()
             }
@@ -142,71 +150,96 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     private func setupCamera() {
         sessionQueue.async {
-            if self.isSessionConfigured {
-                if !self.session.isRunning {
-                    self.session.startRunning()
-                }
-                DispatchQueue.main.async {
-                    self.previewLayer.session = self.session
-                    self.setPreviewPortraitOrientation()
-                }
-                return
+            self.pendingSessionStart = true
+            self.configureSessionIfNeeded()
+            self.startSessionIfPossible()
+        }
+    }
+
+    private func configureSessionIfNeeded() {
+        guard !isSessionConfigured else {
+            attachPreviewSession()
+            return
+        }
+
+        guard !isConfiguringSession else { return }
+        isConfiguringSession = true
+
+        session.beginConfiguration()
+        var configured = false
+        defer {
+            session.commitConfiguration()
+            isConfiguringSession = false
+
+            if configured {
+                isSessionConfigured = true
+                attachPreviewSession()
             }
+        }
 
-            self.session.beginConfiguration()
-            var shouldStartSession = false
-            defer {
-                self.session.commitConfiguration()
+        if session.canSetSessionPreset(.hd1280x720) {
+            session.sessionPreset = .hd1280x720
+        } else {
+            session.sessionPreset = .high
+        }
 
-                if shouldStartSession {
-                    self.isSessionConfigured = true
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+            return
+        }
 
-                    DispatchQueue.main.async {
-                        self.previewLayer.session = self.session
-                        self.setPreviewPortraitOrientation()
-                    }
+        guard let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) else {
+            return
+        }
+        session.addInput(input)
 
-                    if !self.session.isRunning {
-                        self.session.startRunning()
-                    }
-                }
-            }
+        videoOutput.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
+        ]
+        videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
 
-            if self.session.canSetSessionPreset(.hd1280x720) {
-                self.session.sessionPreset = .hd1280x720
-            } else {
-                self.session.sessionPreset = .high
-            }
+        guard session.canAddOutput(videoOutput) else {
+            return
+        }
+        session.addOutput(videoOutput)
 
-            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-                return
-            }
-
-            guard let input = try? AVCaptureDeviceInput(device: device), self.session.canAddInput(input) else {
-                return
-            }
-            self.session.addInput(input)
-
-            self.videoOutput.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
-            ]
-            self.videoOutput.alwaysDiscardsLateVideoFrames = true
-            self.videoOutput.setSampleBufferDelegate(self, queue: self.videoOutputQueue)
-
-            guard self.session.canAddOutput(self.videoOutput) else {
-                return
-            }
-            self.session.addOutput(self.videoOutput)
-
-            if let connection = self.videoOutput.connection(with: .video) {
+        if let connection = videoOutput.connection(with: .video) {
             if connection.isVideoOrientationSupported {
                 connection.videoOrientation = .portrait
             }
             if connection.isVideoStabilizationSupported {
                 connection.preferredVideoStabilizationMode = .off
             }
+        }
+
+        configured = true
+    }
+
+    private func startSessionIfPossible() {
+        dispatchPrecondition(condition: .onQueue(sessionQueue))
+
+        guard pendingSessionStart else { return }
+        guard isSessionConfigured else { return }
+        guard !isConfiguringSession else { return }
+
+        pendingSessionStart = false
+        guard !session.isRunning else { return }
+
+        // AVCaptureSession.startRunning must not be called on the main thread.
+        guard !Thread.isMainThread else {
+            sessionQueue.async { [weak self] in
+                self?.startSessionIfPossible()
             }
-            shouldStartSession = true
+            return
+        }
+
+        session.startRunning()
+    }
+
+    private func attachPreviewSession() {
+        DispatchQueue.main.async {
+            self.previewLayer.session = self.session
+            self.setPreviewPortraitOrientation()
         }
     }
 

@@ -1,7 +1,6 @@
 import CoreGraphics
 import CoreImage
 import Foundation
-import Vision
 
 struct PillPreprocessedFrame {
     let primaryImage: CIImage
@@ -33,17 +32,23 @@ final class PillFramePreprocessor {
     private let variantCount: Int
     private let edgeTrimRatio: CGFloat
     private let roiMode: ROIMode
+    private let allowContourFallback: Bool
+    private let useMLTraySegmentation: Bool
 
     init(
         modelSide: CGFloat = 640,
-        variantCount: Int = 8,
+        variantCount: Int = 6,
         edgeTrimRatio: CGFloat = 0.0,
-        roiMode: ROIMode = .fixed640
+        roiMode: ROIMode = .fixed640,
+        allowContourFallback: Bool = true,
+        useMLTraySegmentation: Bool = true
     ) {
         self.modelSide = modelSide
         self.variantCount = max(1, variantCount)
         self.edgeTrimRatio = max(0, min(0.2, edgeTrimRatio))
         self.roiMode = roiMode
+        self.allowContourFallback = allowContourFallback
+        self.useMLTraySegmentation = useMLTraySegmentation
     }
 
     func prepareForInference(from squareImage: CIImage, ciContext: CIContext) -> PillPreprocessedFrame {
@@ -107,103 +112,43 @@ final class PillFramePreprocessor {
     }
 
     private func detectTrayROI(in image: CIImage, ciContext: CIContext) -> DetectedROI? {
-        guard let cgImage = ciContext.createCGImage(image, from: modelRect) else { return nil }
+        if useMLTraySegmentation,
+           let segmented = TrayCoreMLSegmenter.detect(in: image, ciContext: ciContext, modelSide: modelSide)
+        {
+            let stabilized = stabilizeSquare(segmented.rect, in: modelRect)
+            guard !stabilized.isNull, stabilized.width > 0, stabilized.height > 0 else { return nil }
+            return DetectedROI(rect: stabilized, confidence: segmented.confidence)
+        }
 
-        let request = VNDetectRectanglesRequest()
-        request.maximumObservations = 10
-        request.minimumSize = 0.30
-        request.minimumAspectRatio = 0.72
-        request.maximumAspectRatio = 1.45
-        request.minimumConfidence = 0.55
-        request.quadratureTolerance = 18
-
-        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
+        guard allowContourFallback,
+              let segmented = TrayContourSegmenter.detect(in: image, ciContext: ciContext, modelSide: modelSide)
+        else {
             return nil
         }
 
-        guard let observations = request.results as? [VNRectangleObservation], !observations.isEmpty else {
-            return nil
-        }
-
-        var bestRect: CGRect?
-        var bestConfidence: CGFloat = 0
-        var bestScore = -CGFloat.greatestFiniteMagnitude
-
-        for observation in observations {
-            let rect = CGRect(
-                x: observation.boundingBox.origin.x * modelSide,
-                y: observation.boundingBox.origin.y * modelSide,
-                width: observation.boundingBox.width * modelSide,
-                height: observation.boundingBox.height * modelSide
-            )
-
-            if rect.width < modelSide * 0.34 || rect.height < modelSide * 0.34 {
-                continue
-            }
-
-            let area = (rect.width * rect.height) / (modelSide * modelSide)
-            if area < 0.22 || area > 0.94 {
-                continue
-            }
-
-            let centerX = rect.midX / modelSide
-            let centerY = rect.midY / modelSide
-            let centerPenalty = abs(centerX - 0.5) + abs(centerY - 0.5)
-            let aspect = rect.width / max(rect.height, 1)
-            let aspectPenalty = abs(log(max(0.001, aspect))) * 0.52
-            let confidence = max(0, min(1, CGFloat(observation.confidence)))
-
-            let score = area * 2.2 + confidence * 1.2 - centerPenalty * 1.6 - aspectPenalty
-            if score > bestScore {
-                bestScore = score
-                bestRect = rect
-                bestConfidence = confidence
-            }
-        }
-
-        guard let bestRect else { return nil }
-        let stabilized = stabilizeSquare(bestRect, in: modelRect)
+        let stabilized = stabilizeSquare(segmented.rect, in: modelRect)
         guard !stabilized.isNull, stabilized.width > 0, stabilized.height > 0 else { return nil }
-
-        return DetectedROI(rect: stabilized, confidence: bestConfidence)
+        return DetectedROI(rect: stabilized, confidence: segmented.confidence)
     }
 
     private func makeFinalROI(detected: DetectedROI?, fallback: CGRect, bounds: CGRect) -> FinalROI {
         guard let detected else {
             return FinalROI(rect: fallback, source: "fallback", confidence: nil)
         }
-        guard detected.confidence >= 0.62 else {
+        guard detected.confidence >= 0.40 else {
             return FinalROI(rect: fallback, source: "fallback", confidence: detected.confidence)
         }
-
-        let blend = 0.18 + detected.confidence * 0.20
-        let originX = fallback.origin.x + (detected.rect.origin.x - fallback.origin.x) * blend
-        let originY = fallback.origin.y + (detected.rect.origin.y - fallback.origin.y) * blend
-        let width = fallback.width + (detected.rect.width - fallback.width) * blend
-        let height = fallback.height + (detected.rect.height - fallback.height) * blend
-
-        let blended = CGRect(x: originX, y: originY, width: width, height: height).intersection(bounds)
-        let square = stabilizeSquare(blended, in: bounds)
-        guard !square.isNull else {
+        let expanded = detected.rect.insetBy(dx: -modelSide * 0.04, dy: -modelSide * 0.04).intersection(bounds)
+        let square = stabilizeSquare(expanded, in: bounds)
+        guard !square.isNull, square.width >= modelSide * 0.74, square.height >= modelSide * 0.74 else {
             return FinalROI(rect: fallback, source: "fallback", confidence: detected.confidence)
         }
-
-        let insetX = square.width * 0.08
-        let insetY = square.height * 0.08
-        let inner = square.insetBy(dx: insetX, dy: insetY).intersection(bounds)
-
-        guard !inner.isNull, inner.width >= modelSide * 0.62, inner.height >= modelSide * 0.62 else {
-            return FinalROI(rect: fallback, source: "fallback", confidence: detected.confidence)
-        }
-        return FinalROI(rect: inner.integral, source: "detected", confidence: detected.confidence)
+        return FinalROI(rect: square.integral, source: "detected", confidence: detected.confidence)
     }
 
     private func defaultROI(in extent: CGRect) -> CGRect {
         let side = min(extent.width, extent.height)
-        let innerSide = side * 0.86
+        let innerSide = side * 0.92
         let originX = extent.midX - innerSide * 0.5
         let originY = extent.midY - innerSide * 0.5
 
@@ -242,37 +187,14 @@ final class PillFramePreprocessor {
     }
 
     private func enhanceBaseImage(_ image: CIImage) -> CIImage {
-        let denoised = image.applyingFilter(
-            "CINoiseReduction",
-            parameters: [
-                "inputNoiseLevel": 0.03,
-                "inputSharpness": 0.0
-            ]
-        )
-
-        let median = denoised.applyingFilter("CIMedianFilter")
-
-        return median
+        // Keep inference-time preprocessing close to training distribution.
+        // Aggressive contrast/clamp caused misses on bright white pills.
+        return image
             .applyingFilter(
-                "CIColorControls",
+                "CINoiseReduction",
                 parameters: [
-                    kCIInputSaturationKey: 0.98,
-                    kCIInputBrightnessKey: 0.01,
-                    kCIInputContrastKey: 1.10
-                ]
-            )
-            .applyingFilter(
-                "CIHighlightShadowAdjust",
-                parameters: [
-                    "inputHighlightAmount": 0.52,
-                    "inputShadowAmount": 0.05
-                ]
-            )
-            .applyingFilter(
-                "CIColorClamp",
-                parameters: [
-                    "inputMinComponents": CIVector(x: 0.03, y: 0.03, z: 0.03, w: 0),
-                    "inputMaxComponents": CIVector(x: 0.97, y: 0.97, z: 0.97, w: 1)
+                    "inputNoiseLevel": 0.02,
+                    "inputSharpness": 0.20
                 ]
             )
             .cropped(to: modelRect)
@@ -293,8 +215,8 @@ final class PillFramePreprocessor {
                 "CIColorControls",
                 parameters: [
                     kCIInputSaturationKey: 1.0,
-                    kCIInputBrightnessKey: 0.03,
-                    kCIInputContrastKey: 1.08
+                    kCIInputBrightnessKey: 0.02,
+                    kCIInputContrastKey: 1.03
                 ]
             )
         )
@@ -302,78 +224,14 @@ final class PillFramePreprocessor {
             base.applyingFilter(
                 "CIColorControls",
                 parameters: [
-                    kCIInputSaturationKey: 0.95,
+                    kCIInputSaturationKey: 1.0,
                     kCIInputBrightnessKey: -0.02,
-                    kCIInputContrastKey: 1.10
+                    kCIInputContrastKey: 1.03
                 ]
             )
         )
         push(
-            base
-                .applyingFilter("CIMedianFilter")
-                .applyingFilter(
-                    "CIColorControls",
-                    parameters: [
-                        kCIInputSaturationKey: 0.92,
-                        kCIInputBrightnessKey: 0.01,
-                        kCIInputContrastKey: 1.14
-                    ]
-                )
-        )
-        push(
-            base
-                .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 0.65])
-                .cropped(to: modelRect)
-                .applyingFilter(
-                    "CIColorControls",
-                    parameters: [
-                        kCIInputSaturationKey: 1.0,
-                        kCIInputBrightnessKey: 0,
-                        kCIInputContrastKey: 1.08
-                    ]
-                )
-        )
-        push(
-            base
-                .applyingFilter("CIExposureAdjust", parameters: [kCIInputEVKey: 0.15])
-                .applyingFilter(
-                    "CIColorControls",
-                    parameters: [
-                        kCIInputSaturationKey: 0.96,
-                        kCIInputBrightnessKey: 0,
-                        kCIInputContrastKey: 1.06
-                    ]
-                )
-        )
-        push(
-            base
-                .applyingFilter("CIExposureAdjust", parameters: [kCIInputEVKey: -0.10])
-                .applyingFilter(
-                    "CIColorControls",
-                    parameters: [
-                        kCIInputSaturationKey: 0.96,
-                        kCIInputBrightnessKey: 0,
-                        kCIInputContrastKey: 1.13
-                    ]
-                )
-        )
-        push(
-            base
-                .applyingFilter(
-                    "CIUnsharpMask",
-                    parameters: [
-                        kCIInputRadiusKey: 1.0,
-                        kCIInputIntensityKey: 0.65
-                    ]
-                )
-                .applyingFilter(
-                    "CIColorControls",
-                    parameters: [
-                        kCIInputSaturationKey: 0.98,
-                        kCIInputBrightnessKey: 0.01,
-                        kCIInputContrastKey: 1.06
-                    ]
-                )
+            base.applyingFilter("CIExposureAdjust", parameters: [kCIInputEVKey: 0.08])
         )
 
         while variants.count < variantCount {

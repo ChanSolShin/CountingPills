@@ -46,17 +46,39 @@ final class DefaultCaptureFramePreparationUseCase: CaptureFramePreparationUseCas
 
     init(
         modelSide: CGFloat = 640,
-        variantCount: Int = 8,
+        variantCount: Int = 6,
+        profile: PillPipelineProfile = .fullLearning,
         ciContext: CIContext = CIContext()
     ) {
         self.modelSide = modelSide
         self.modelRenderSize = CGSize(width: modelSide, height: modelSide)
         self.ciContext = ciContext
+
+        let resolvedROIMode: PillFramePreprocessor.ROIMode
+        let allowContourFallback: Bool
+        let useMLTraySegmentation: Bool
+        switch profile {
+        case .fullLearning:
+            resolvedROIMode = .detectedTray
+            allowContourFallback = false
+            useMLTraySegmentation = true
+        case .hybrid:
+            resolvedROIMode = .detectedTray
+            allowContourFallback = true
+            useMLTraySegmentation = true
+        case .pillInstanceOnly:
+            resolvedROIMode = .fixed640
+            allowContourFallback = false
+            useMLTraySegmentation = false
+        }
+
         self.framePreprocessor = PillFramePreprocessor(
             modelSide: modelSide,
             variantCount: variantCount,
             edgeTrimRatio: 0,
-            roiMode: .fixed640
+            roiMode: resolvedROIMode,
+            allowContourFallback: allowContourFallback,
+            useMLTraySegmentation: useMLTraySegmentation
         )
     }
 
