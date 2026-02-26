@@ -2,9 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleGetInfoString</key>
-	<string></string>
-	<key>pill_count-instance-segment</key>
-	<string></string>
+	<key>ROBOFLOW_API_KEY</key>
+	<string>$(ROBOFLOW_API_KEY)</string>
+	<key>ROBOFLOW_PILL_MODEL_ID</key>
+	<string>$(ROBOFLOW_PILL_MODEL_ID)</string>
+	<key>ROBOFLOW_PILL_MODEL_VERSION</key>
+	<string>$(ROBOFLOW_PILL_MODEL_VERSION)</string>
 </dict>
 </plist>
