@@ -6,12 +6,11 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     var onProcessingChange: ((Bool) -> Void)?
     var onCaptureStateChange: ((Bool) -> Void)?
 
-    private let session = AVCaptureSession()
+    private let sessionController = CameraSessionController()
     private let previewLayer = AVCaptureVideoPreviewLayer()
     private let videoOutput = AVCaptureVideoDataOutput()
 
     private let inferenceQueue = DispatchQueue(label: "pill.inference.queue", qos: .userInitiated)
-    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     private let stateQueue = DispatchQueue(label: "camera.state.queue")
     private let videoOutputQueue = DispatchQueue(label: "camera.video.output.queue", qos: .userInitiated)
     private let latestBufferQueue = DispatchQueue(label: "camera.latest.buffer.queue")
@@ -25,9 +24,6 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     private let frozenImageView = UIImageView()
 
     private var captureState = CameraCaptureStateMachine()
-    private var isSessionConfigured = false
-    private var isConfiguringSession = false
-    private var pendingSessionStart = false
     private var latestPixelBuffer: CVPixelBuffer?
 
     init(
@@ -108,12 +104,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     }
 
     func stopSession() {
-        sessionQueue.async {
-            self.pendingSessionStart = false
-            if self.session.isRunning {
-                self.session.stopRunning()
-            }
-        }
+        sessionController.stop()
     }
 
     private func setupViews() {
@@ -124,6 +115,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         previewContainerView.backgroundColor = .black
         view.addSubview(previewContainerView)
 
+        previewLayer.session = sessionController.session
         previewLayer.videoGravity = .resizeAspectFill
         previewContainerView.layer.addSublayer(previewLayer)
 
@@ -144,98 +136,13 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     }
 
     private func setupCamera() {
-        sessionQueue.async {
-            self.pendingSessionStart = true
-            self.configureSessionIfNeeded()
-            self.startSessionIfPossible()
-        }
-    }
-
-    private func configureSessionIfNeeded() {
-        guard !isSessionConfigured else {
-            attachPreviewSession()
-            return
-        }
-
-        guard !isConfiguringSession else { return }
-        isConfiguringSession = true
-
-        session.beginConfiguration()
-        var configured = false
-        defer {
-            session.commitConfiguration()
-            isConfiguringSession = false
-
-            if configured {
-                isSessionConfigured = true
-                attachPreviewSession()
-            }
-        }
-
-        if session.canSetSessionPreset(.hd1280x720) {
-            session.sessionPreset = .hd1280x720
-        } else {
-            session.sessionPreset = .high
-        }
-
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-            return
-        }
-
-        guard let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) else {
-            return
-        }
-        session.addInput(input)
-
         videoOutput.videoSettings = [
             kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
         ]
         videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
-
-        guard session.canAddOutput(videoOutput) else {
-            return
-        }
-        session.addOutput(videoOutput)
-
-        if let connection = videoOutput.connection(with: .video) {
-            if connection.isVideoOrientationSupported {
-                connection.videoOrientation = .portrait
-            }
-            if connection.isVideoStabilizationSupported {
-                connection.preferredVideoStabilizationMode = .off
-            }
-        }
-
-        configured = true
-    }
-
-    private func startSessionIfPossible() {
-        dispatchPrecondition(condition: .onQueue(sessionQueue))
-
-        guard pendingSessionStart else { return }
-        guard isSessionConfigured else { return }
-        guard !isConfiguringSession else { return }
-
-        pendingSessionStart = false
-        guard !session.isRunning else { return }
-
-        // AVCaptureSession.startRunning must not be called on the main thread.
-        guard !Thread.isMainThread else {
-            sessionQueue.async { [weak self] in
-                self?.startSessionIfPossible()
-            }
-            return
-        }
-
-        session.startRunning()
-    }
-
-    private func attachPreviewSession() {
-        DispatchQueue.main.async {
-            self.previewLayer.session = self.session
-            self.setPreviewPortraitOrientation()
-        }
+        sessionController.start(videoOutput: videoOutput)
+        setPreviewPortraitOrientation()
     }
 
     func captureOutput(
