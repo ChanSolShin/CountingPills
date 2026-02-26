@@ -122,7 +122,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     }
 
     private func setupViews() {
-        view.backgroundColor = .black
+        view.backgroundColor = UIColor(red: 12.0 / 255.0, green: 12.0 / 255.0, blue: 12.0 / 255.0, alpha: 1.0)
 
         previewContainerView.clipsToBounds = true
         previewContainerView.layer.cornerRadius = 12
@@ -138,7 +138,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         frozenImageView.clipsToBounds = true
         previewContainerView.addSubview(frozenImageView)
 
-        dotLayer.fillColor = UIColor.systemGreen.cgColor
+        dotLayer.fillColor = UIColor(red: 33.0 / 255.0, green: 194.0 / 255.0, blue: 177.0 / 255.0, alpha: 1.0).cgColor
         dotLayer.strokeColor = UIColor.clear.cgColor
         previewContainerView.layer.addSublayer(dotLayer)
 
