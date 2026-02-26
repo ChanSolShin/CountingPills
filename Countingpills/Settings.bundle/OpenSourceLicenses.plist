@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Roboflow Universe Dataset</string>
+			<key>FooterText</key>
+			<string>pill_count-instance-segment dataset by LicanseIDCard, licensed under CC BY 4.0.</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>Dataset</string>
+			<key>Key</key>
+			<string>license.dataset.name</string>
+			<key>DefaultValue</key>
+			<string>pill_count-instance-segment</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>Author</string>
+			<key>Key</key>
+			<string>license.dataset.author</string>
+			<key>DefaultValue</key>
+			<string>LicanseIDCard</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>License</string>
+			<key>Key</key>
+			<string>license.dataset.type</string>
+			<key>DefaultValue</key>
+			<string>CC BY 4.0</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>Source</string>
+			<key>Key</key>
+			<string>license.dataset.source</string>
+			<key>DefaultValue</key>
+			<string>https://universe.roboflow.com/licanseidcard/pill_count-instance-segment</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>License URL</string>
+			<key>Key</key>
+			<string>license.dataset.license_url</string>
+			<key>DefaultValue</key>
+			<string>https://creativecommons.org/licenses/by/4.0/</string>
+		</dict>
+	</array>
+	<key>StringsTable</key>
+	<string>OpenSourceLicenses</string>
+</dict>
+</plist>
