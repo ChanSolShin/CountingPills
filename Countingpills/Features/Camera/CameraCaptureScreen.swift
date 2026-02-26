@@ -23,7 +23,7 @@ struct CameraCaptureScreen: View {
                     let frameRect = modelFrameRect(in: proxy.size)
                     Text("\(pillCount)")
                         .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.green)
+                        .foregroundColor(Color(red: 33.0 / 255.0, green: 194.0 / 255.0, blue: 177.0 / 255.0))
                         .shadow(color: .black.opacity(0.75), radius: 4, x: 0, y: 2)
                         .position(x: frameRect.midX, y: countLabelY(frameRect: frameRect, canvasSize: proxy.size))
                 }
