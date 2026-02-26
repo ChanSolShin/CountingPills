@@ -8,8 +8,7 @@ protocol RunPillDetectionUseCase {
 final class DefaultRunPillDetectionUseCase: RunPillDetectionUseCase {
     private let roboflowRunner: PillRoboflowRunner
 
-    init(profile: PillPipelineProfile = .fullLearning) {
-        _ = profile
+    init() {
         self.roboflowRunner = PillRoboflowRunner()
     }
 

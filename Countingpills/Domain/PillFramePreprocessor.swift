@@ -14,57 +14,28 @@ struct PillPreprocessedFrame {
 final class PillFramePreprocessor {
     enum ROIMode {
         case fixed640
-        case detectedTray
-    }
-
-    private struct DetectedROI {
-        let rect: CGRect
-        let confidence: CGFloat
-    }
-
-    private struct FinalROI {
-        let rect: CGRect
-        let source: String
-        let confidence: CGFloat?
     }
 
     private let modelSide: CGFloat
     private let variantCount: Int
     private let edgeTrimRatio: CGFloat
-    private let roiMode: ROIMode
-    private let allowContourFallback: Bool
-    private let useMLTraySegmentation: Bool
 
     init(
         modelSide: CGFloat = 640,
         variantCount: Int = 6,
         edgeTrimRatio: CGFloat = 0.0,
-        roiMode: ROIMode = .fixed640,
-        allowContourFallback: Bool = true,
-        useMLTraySegmentation: Bool = true
+        roiMode: ROIMode = .fixed640
     ) {
         self.modelSide = modelSide
         self.variantCount = max(1, variantCount)
         self.edgeTrimRatio = max(0, min(0.2, edgeTrimRatio))
-        self.roiMode = roiMode
-        self.allowContourFallback = allowContourFallback
-        self.useMLTraySegmentation = useMLTraySegmentation
+        _ = roiMode
     }
 
     func prepareForInference(from squareImage: CIImage, ciContext: CIContext) -> PillPreprocessedFrame {
         let normalized = normalizeToModelExtent(squareImage)
-
-        let finalROI: FinalROI
-        switch roiMode {
-        case .fixed640:
-            finalROI = FinalROI(rect: modelRect, source: "fixed", confidence: 1.0)
-        case .detectedTray:
-            let fallbackROI = defaultROI(in: normalized.extent)
-            let detectedROI = detectTrayROI(in: normalized, ciContext: ciContext)
-            finalROI = makeFinalROI(detected: detectedROI, fallback: fallbackROI, bounds: normalized.extent)
-        }
-
-        let cropped = cropAndResize(normalized, to: finalROI.rect)
+        let finalROI = modelRect
+        let cropped = cropAndResize(normalized, to: finalROI)
         let trimmed = edgeTrimRatio > 0 ? trimEdgeBand(cropped) : cropped
         let enhanced = enhanceBaseImage(trimmed)
         let variants = makeVariants(from: enhanced)
@@ -72,9 +43,9 @@ final class PillFramePreprocessor {
         return PillPreprocessedFrame(
             primaryImage: variants.first ?? enhanced,
             variantImages: variants,
-            roiRect: finalROI.rect,
-            roiSource: finalROI.source,
-            roiConfidence: finalROI.confidence,
+            roiRect: finalROI,
+            roiSource: "fixed",
+            roiConfidence: 1.0,
             edgeTrimRatio: edgeTrimRatio
         )
     }
@@ -109,52 +80,6 @@ final class PillFramePreprocessor {
         return normalized
             .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             .cropped(to: modelRect)
-    }
-
-    private func detectTrayROI(in image: CIImage, ciContext: CIContext) -> DetectedROI? {
-        if useMLTraySegmentation,
-           let segmented = TrayCoreMLSegmenter.detect(in: image, ciContext: ciContext, modelSide: modelSide)
-        {
-            let stabilized = stabilizeSquare(segmented.rect, in: modelRect)
-            guard !stabilized.isNull, stabilized.width > 0, stabilized.height > 0 else { return nil }
-            return DetectedROI(rect: stabilized, confidence: segmented.confidence)
-        }
-
-        guard allowContourFallback,
-              let segmented = TrayContourSegmenter.detect(in: image, ciContext: ciContext, modelSide: modelSide)
-        else {
-            return nil
-        }
-
-        let stabilized = stabilizeSquare(segmented.rect, in: modelRect)
-        guard !stabilized.isNull, stabilized.width > 0, stabilized.height > 0 else { return nil }
-        return DetectedROI(rect: stabilized, confidence: segmented.confidence)
-    }
-
-    private func makeFinalROI(detected: DetectedROI?, fallback: CGRect, bounds: CGRect) -> FinalROI {
-        guard let detected else {
-            return FinalROI(rect: fallback, source: "fallback", confidence: nil)
-        }
-        guard detected.confidence >= 0.40 else {
-            return FinalROI(rect: fallback, source: "fallback", confidence: detected.confidence)
-        }
-        let expanded = detected.rect.insetBy(dx: -modelSide * 0.04, dy: -modelSide * 0.04).intersection(bounds)
-        let square = stabilizeSquare(expanded, in: bounds)
-        guard !square.isNull, square.width >= modelSide * 0.74, square.height >= modelSide * 0.74 else {
-            return FinalROI(rect: fallback, source: "fallback", confidence: detected.confidence)
-        }
-        return FinalROI(rect: square.integral, source: "detected", confidence: detected.confidence)
-    }
-
-    private func defaultROI(in extent: CGRect) -> CGRect {
-        let side = min(extent.width, extent.height)
-        let innerSide = side * 0.92
-        let originX = extent.midX - innerSide * 0.5
-        let originY = extent.midY - innerSide * 0.5
-
-        return CGRect(x: originX, y: originY, width: innerSide, height: innerSide)
-            .intersection(extent)
-            .integral
     }
 
     private func cropAndResize(_ image: CIImage, to roiRect: CGRect) -> CIImage {
@@ -239,18 +164,5 @@ final class PillFramePreprocessor {
         }
 
         return Array(variants.prefix(variantCount))
-    }
-
-    private func stabilizeSquare(_ rect: CGRect, in bounds: CGRect) -> CGRect {
-        let clipped = rect.intersection(bounds)
-        guard !clipped.isNull, clipped.width > 0, clipped.height > 0 else { return .null }
-
-        let side = min(clipped.width, clipped.height)
-        let x = clipped.midX - side * 0.5
-        let y = clipped.midY - side * 0.5
-
-        return CGRect(x: x, y: y, width: side, height: side)
-            .intersection(bounds)
-            .integral
     }
 }
