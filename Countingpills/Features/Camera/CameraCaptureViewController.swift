@@ -5,6 +5,7 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     var onResult: ((PillInferenceResult) -> Void)?
     var onProcessingChange: ((Bool) -> Void)?
     var onCaptureStateChange: ((Bool) -> Void)?
+    var onModelReadyChange: ((Bool) -> Void)?
 
     private let sessionController = CameraSessionController()
     private let previewLayer = AVCaptureVideoPreviewLayer()
@@ -25,6 +26,8 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
 
     private var captureState = CameraCaptureStateMachine()
     private var latestPixelBuffer: CVPixelBuffer?
+    private var modelReadyTimer: DispatchSourceTimer?
+    private var lastModelReadyState: Bool?
 
     init(
         framePreparationUseCase: CaptureFramePreparationUseCase = DefaultCaptureFramePreparationUseCase(
@@ -46,6 +49,12 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         super.viewDidLoad()
         setupViews()
         setupCamera()
+        startModelReadyMonitoring()
+    }
+
+    deinit {
+        modelReadyTimer?.cancel()
+        modelReadyTimer = nil
     }
 
     override func viewDidLayoutSubviews() {
@@ -143,6 +152,32 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
         videoOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
         sessionController.start(videoOutput: videoOutput)
         setPreviewPortraitOrientation()
+    }
+
+    private func startModelReadyMonitoring() {
+        modelReadyTimer?.cancel()
+
+        let timer = DispatchSource.makeTimerSource(queue: stateQueue)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(300))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+
+            let isReady = self.runPillDetectionUseCase.isModelReady()
+            if self.lastModelReadyState != isReady {
+                self.lastModelReadyState = isReady
+                DispatchQueue.main.async {
+                    self.onModelReadyChange?(isReady)
+                }
+            }
+
+            if isReady {
+                self.modelReadyTimer?.cancel()
+                self.modelReadyTimer = nil
+            }
+        }
+
+        modelReadyTimer = timer
+        timer.resume()
     }
 
     func captureOutput(

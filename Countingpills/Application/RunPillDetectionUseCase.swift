@@ -3,6 +3,7 @@ import Foundation
 
 protocol RunPillDetectionUseCase {
     func run(modelPixelBuffers: [CVPixelBuffer]) -> PillInferenceResult
+    func isModelReady() -> Bool
 }
 
 final class DefaultRunPillDetectionUseCase: RunPillDetectionUseCase {
@@ -22,5 +23,9 @@ final class DefaultRunPillDetectionUseCase: RunPillDetectionUseCase {
         print("[PillDebug] roboflow-result count=\(result.count)")
         #endif
         return result
+    }
+
+    func isModelReady() -> Bool {
+        roboflowRunner.isModelReady()
     }
 }

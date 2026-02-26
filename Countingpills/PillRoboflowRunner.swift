@@ -109,6 +109,10 @@ final class PillRoboflowRunner {
         )
     }
 
+    func isModelReady() -> Bool {
+        loadStateQueue.sync { loadedModel != nil }
+    }
+
     private func ensureModelLoaded() -> Bool {
         if loadedModel != nil { return true }
         guard !config.apiKey.isEmpty else {

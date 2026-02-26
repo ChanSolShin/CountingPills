@@ -6,6 +6,7 @@ struct CameraCaptureRepresentable: UIViewControllerRepresentable {
     @Binding var pillCount: Int
     @Binding var isProcessing: Bool
     @Binding var isShowingCapturedFrame: Bool
+    @Binding var isModelReady: Bool
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -26,6 +27,11 @@ struct CameraCaptureRepresentable: UIViewControllerRepresentable {
         viewController.onCaptureStateChange = { showingCaptured in
             DispatchQueue.main.async {
                 self.isShowingCapturedFrame = showingCaptured
+            }
+        }
+        viewController.onModelReadyChange = { isReady in
+            DispatchQueue.main.async {
+                self.isModelReady = isReady
             }
         }
         return viewController

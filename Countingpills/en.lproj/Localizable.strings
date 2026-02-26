@@ -10,3 +10,5 @@
 
 "onboarding.page3.title" = "Check color contrast";
 "onboarding.page3.body" = "Detection may be less accurate when pill color and background color are similar.";
+
+"camera.model.preparing" = "Preparing model...";

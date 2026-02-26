@@ -6,6 +6,7 @@ struct CameraCaptureScreen: View {
     @State private var pillCount = 0
     @State private var isProcessing = false
     @State private var isShowingCapturedFrame = false
+    @State private var isModelReady = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -15,7 +16,8 @@ struct CameraCaptureScreen: View {
                     retakeToken: retakeToken,
                     pillCount: $pillCount,
                     isProcessing: $isProcessing,
-                    isShowingCapturedFrame: $isShowingCapturedFrame
+                    isShowingCapturedFrame: $isShowingCapturedFrame,
+                    isModelReady: $isModelReady
                 )
                 .ignoresSafeArea()
 
@@ -64,13 +66,23 @@ struct CameraCaptureScreen: View {
                                     .frame(width: 66, height: 66)
                             }
                         }
-                        .disabled(isProcessing || isShowingCapturedFrame)
-                        .opacity((isProcessing || isShowingCapturedFrame) ? 0.6 : 1.0)
+                        .disabled(isProcessing || isShowingCapturedFrame || !isModelReady)
+                        .opacity((isProcessing || isShowingCapturedFrame || !isModelReady) ? 0.6 : 1.0)
                     }
                 }
                 .padding(.bottom, 36)
 
-                if isProcessing {
+                if !isModelReady {
+                    VStack(spacing: 10) {
+                        ProgressView()
+                        Text("camera.model.preparing")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(14)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(12)
+                } else if isProcessing {
                     VStack(spacing: 8) {
                         ProgressView()
                     }
