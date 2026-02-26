@@ -2,8 +2,6 @@ import AVFoundation
 import UIKit
 
 final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
-    private static let pipelineProfile: PillPipelineProfile = .pillInstanceOnly
-
     var onResult: ((PillInferenceResult) -> Void)?
     var onProcessingChange: ((Bool) -> Void)?
     var onCaptureStateChange: ((Bool) -> Void)?
@@ -35,12 +33,9 @@ final class CameraCaptureViewController: UIViewController, AVCaptureVideoDataOut
     init(
         framePreparationUseCase: CaptureFramePreparationUseCase = DefaultCaptureFramePreparationUseCase(
             modelSide: 640,
-            variantCount: 1,
-            profile: CameraCaptureViewController.pipelineProfile
+            variantCount: 1
         ),
-        runPillDetectionUseCase: RunPillDetectionUseCase = DefaultRunPillDetectionUseCase(
-            profile: CameraCaptureViewController.pipelineProfile
-        )
+        runPillDetectionUseCase: RunPillDetectionUseCase = DefaultRunPillDetectionUseCase()
     ) {
         self.framePreparationUseCase = framePreparationUseCase
         self.runPillDetectionUseCase = runPillDetectionUseCase
