@@ -1,0 +1,12 @@
+"onboarding.skip" = "Skip";
+"onboarding.next" = "Next";
+"onboarding.start" = "Get Started";
+
+"onboarding.page1.title" = "Place all pills inside the frame";
+"onboarding.page1.body" = "Please make sure all pills are visible inside the camera frame.";
+
+"onboarding.page2.title" = "Capture to count pills";
+"onboarding.page2.body" = "Tap the capture button to count the number of pills.";
+
+"onboarding.page3.title" = "Check color contrast";
+"onboarding.page3.body" = "Detection may be less accurate when pill color and background color are similar.";
