@@ -83,13 +83,16 @@ https://apps.apple.com/us/app/countingpills-%EC%95%8C%EC%95%BD%EC%9D%84-%EB%B9%A
 ---
 ### 앱스토어 스크린샷
 
-<img width="300" height="2778" alt="한글1" src="https://github.com/user-attachments/assets/190c2acd-9f89-42a2-89e7-188b5d780336" />
-<img width="300" height="2778" alt="한글2" src="https://github.com/user-attachments/assets/5f7225e5-b83a-4f7f-9420-c225b624f872" />
-<img width="300" height="2778" alt="한글3" src="https://github.com/user-attachments/assets/725392d0-5a8a-4243-92c9-183a41052f9b" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/190c2acd-9f89-42a2-89e7-188b5d780336" width="160"/>
+  <img src="https://github.com/user-attachments/assets/5f7225e5-b83a-4f7f-9420-c225b624f872" width="160"/>
+  <img src="https://github.com/user-attachments/assets/725392d0-5a8a-4243-92c9-183a41052f9b" width="160"/>
+</p>
 
-<img width="300" height="2778" alt="영어1" src="https://github.com/user-attachments/assets/8028aa40-f30a-4466-a78c-6d0f616224fb" />
-<img width="300" height="2778" alt="영어2" src="https://github.com/user-attachments/assets/c8953bcc-7ca6-4f5c-8314-5119719c911b" />
-<img width="300" height="2778" alt="영어3" src="https://github.com/user-attachments/assets/60dbf633-18f2-4f0b-a660-d5d263c1a812" />
-
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8028aa40-f30a-4466-a78c-6d0f616224fb" width="160"/>
+  <img src="https://github.com/user-attachments/assets/c8953bcc-7ca6-4f5c-8314-5119719c911b" width="160"/>
+  <img src="https://github.com/user-attachments/assets/60dbf633-18f2-4f0b-a660-d5d263c1a812" width="160"/>
+</p>
 
 
