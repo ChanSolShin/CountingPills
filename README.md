@@ -1,5 +1,7 @@
-<img width="200" height="200" alt="KakaoTalk_Photo_2026-02-27-04-20-30 002" src="https://github.com/user-attachments/assets/bcd564f6-48f6-4abb-b474-a81b3822c1a1" />
-<img width="200" height="200" alt="KakaoTalk_Photo_2026-02-27-04-20-30 001" src="https://github.com/user-attachments/assets/9fb40ec3-14b2-4f75-836c-2f7cb2108894" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/bcd564f6-48f6-4abb-b474-a81b3822c1a1" width="200"/>
+  <img src="https://github.com/user-attachments/assets/9fb40ec3-14b2-4f75-836c-2f7cb2108894" width="200"/>
+</p>
 
 ### 앱스토어 링크
 https://apps.apple.com/us/app/countingpills-%EC%95%8C%EC%95%BD%EC%9D%84-%EB%B9%A0%EB%A5%B4%EA%B2%8C-%EC%84%B8%EC%96%B4%EB%B3%B4%EC%84%B8%EC%9A%94/id6759668362?l
