@@ -65,6 +65,53 @@ https://apps.apple.com/us/app/countingpills-%EC%95%8C%EC%95%BD%EC%9D%84-%EB%B9%A
     사용자 기기 설정 언어에 따라 온보딩 가이드를 한국어 또는 영어로 자동 표시하도록 구현
    
 ---
+## 아키텍처
+
+CountingPills는 **SwiftUI/UIKit 하이브리드 기반의 UseCase 중심 계층형 아키텍처**로 구성되어 있습니다.
+
+화면 UI는 SwiftUI로 구성하고, 카메라처럼 시스템 제어가 중요한 기능은 `UIViewControllerRepresentable`을 통해 UIKit으로 분리했습니다.
+
+또한 촬영 프레임 전처리, AI 추론 실행, 외부 모델 호출, 카메라 세션 제어를 각각 별도 계층으로 나누어 UI와 비즈니스 로직, 시스템 제어 로직이 서로 섞이지 않도록 설계했습니다.
+
+특히 카메라 세션은 별도의 `SessionController`에서 단일 serial queue로 제어하여 `AVCaptureSession`의 상태 전이 충돌을 방지했고, AI 추론은 UseCase와 Runner 계층으로 분리해 유지보수성과 확장성을 높였습니다.
+```text
+Countingpills/
+├── Application
+│   ├── CaptureFramePreparationUseCase.swift   # 촬영 프레임 전처리, ROI/리사이즈/모델 입력 변환
+│   └── RunPillDetectionUseCase.swift          # 약 개수 추론 실행, Roboflow Runner 호출
+│
+├── Domain
+│   └── PillDetectionTypes.swift               # 추론 결과, 포인트, 검출 정보 등 도메인 타입
+│
+├── Features
+│   ├── Camera
+│   │   ├── CameraCaptureScreen.swift          # SwiftUI 카메라 화면, 버튼/결과/로딩 UI
+│   │   ├── CameraCaptureRepresentable.swift   # SwiftUI ↔ UIKit 브리지
+│   │   ├── CameraCaptureViewController.swift  # 카메라 프리뷰, 프레임 수집, 추론 흐름 제어
+│   │   ├── CameraCaptureStateMachine.swift    # 촬영/재촬영/처리중 상태 관리
+│   │   └── CameraSessionController.swift      # AVCaptureSession 설정/시작/중지 단일 제어
+│   │
+│   └── Onboarding
+│       └── OnboardingView.swift               # 첫 실행 가이드 화면
+│
+├── Settings.bundle
+│   ├── Root.plist                             # 앱 설정 진입 및 오픈소스 라이선스 메뉴
+│   ├── OpenSourceLicenses.plist               # 라이선스 표시 데이터
+│   ├── ko.lproj                              # 설정 화면 한국어 리소스
+│   └── en.lproj                              # 설정 화면 영어 리소스
+│
+├── en.lproj
+│   └── Localizable.strings                    # 영어 로컬라이징 문자열
+│
+├── ko.lproj
+│   └── Localizable.strings                    # 한국어 로컬라이징 문자열
+│
+├── PillRoboflowRunner.swift                   # Roboflow SDK 기반 모델 로드 및 추론 처리
+├── ContentView.swift                          # 앱 메인 진입 화면, 온보딩/카메라 화면 라우팅
+├── CountingpillsApp.swift                     # 앱 진입점
+└── Info.plist                                 # 카메라 권한 및 앱 설정
+```
+---
 
 ## 배운점 및 성과
 
